@@ -56,6 +56,12 @@ New returns new EventBus with empty handlers.
 bus := EventBus.New();
 ```
 
+You can alternatively use ~50% faster implementation if your listener accepts only one argument of a particular type.
+The below example creates a new EventBus with handlers accepting only string arguments:
+```go
+bus := EventBus.NewSimpleBus[string]();
+````
+
 #### Subscribe(topic string, fn interface{}) error
 Subscribe to a topic. Returns error if `fn` is not a function.
 ```go
@@ -90,6 +96,8 @@ bus.Subscribe("topic:handler", Handler)
 ...
 bus.Publish("topic:handler", "Hello, World!");
 ```
+
+In the case of simplified bus, there is only one argument accepted of predefined type.
 
 #### SubscribeAsync(topic string, fn interface{}, transactional bool)
 Subscribe to a topic with an asynchronous callback. Returns error if `fn` is not a function.
@@ -147,6 +155,36 @@ func main() {
 }
 ```
 
+### Benchmarks
+
+```shell
+% GOMAXPROCS=1 go test -bench=.
+2
+goos: darwin
+goarch: amd64
+pkg: github.com/ziollek/EventBus
+cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+BenchmarkSynchronousPublishing        	 2877297	       406.9 ns/op
+BenchmarkAsynchronousPublishing       	  548457	      2101 ns/op
+BenchmarkSimpleSynchronousPublishing  	 3939492	       305.5 ns/op
+BenchmarkSimpleAsynchronousPublishing 	 1000000	      1141 ns/op
+PASS
+ok  	github.com/ziollek/EventBus	9.449s
+
+% GOMAXPROCS=2 go test -bench=.
+2
+goos: darwin
+goarch: amd64
+pkg: github.com/ziollek/EventBus
+cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+BenchmarkSynchronousPublishing-2          	 3146671	       379.3 ns/op
+BenchmarkAsynchronousPublishing-2         	 1050337	      1148 ns/op
+BenchmarkSimpleSynchronousPublishing-2    	 5079916	       246.0 ns/op
+BenchmarkSimpleAsynchronousPublishing-2   	 2124786	       548.2 ns/op
+PASS
+ok  	github.com/ziollek/EventBus	9.677s
+```
+
 #### Notes
 Documentation is available here: [godoc.org](https://godoc.org/github.com/asaskevich/EventBus).
 Full information about code coverage is also available here: [EventBus on gocover.io](http://gocover.io/github.com/asaskevich/EventBus).
@@ -160,3 +198,4 @@ If you do have a contribution for the package feel free to put up a Pull Request
 * [bennAH](https://github.com/bennAH)
 * [John Noble] (https://github.com/gaxunil)
 * [Evan Borgstrom] (https://github.com/borgstrom)
+* [ziollek](https://github.com/ziollek)
