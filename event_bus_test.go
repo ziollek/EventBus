@@ -188,3 +188,38 @@ func TestSubscribeAsync(t *testing.T) {
 	//	t.Fail()
 	//}
 }
+
+func BenchmarkSynchronousPublishing(b *testing.B) {
+	type input struct {
+		number int
+		slice  []int
+		name   string
+	}
+	list := []int{1, 2, 3, 4, 5}
+
+	bus := New()
+	_ = bus.Subscribe("topic", func(i input) {})
+
+	b.ResetTimer()
+	for range b.N {
+		bus.Publish("topic", input{1, list, "test"})
+	}
+}
+
+func BenchmarkAsynchronousPublishing(b *testing.B) {
+	type input struct {
+		number int
+		slice  []int
+		name   string
+	}
+	list := []int{1, 2, 3, 4, 5}
+
+	bus := New()
+	_ = bus.SubscribeAsync("topic", func(i input) {}, false)
+
+	b.ResetTimer()
+	for range b.N {
+		bus.Publish("topic", input{1, list, "test"})
+	}
+	bus.WaitAsync()
+}
