@@ -1,6 +1,7 @@
 package EventBus
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -8,7 +9,7 @@ import (
 func TestNewGeneric(t *testing.T) {
 	bus := NewSimpleBus[any]()
 	if bus == nil {
-		t.Log("New GenericBus not created!")
+		t.Log("New TypedBus not created!")
 		t.Fail()
 	}
 }
@@ -28,14 +29,17 @@ func TestSimpleOnceAndManySubscribe(t *testing.T) {
 	bus := NewSimpleBus[any]()
 	topic := "topic"
 	flag := 0
-	// artificially define different functions with the same logic
-	// subscription logic prevents from subscribe the same callback for the same topic multiple times
-	fn1 := func(_ any) { flag += 1 }
-	fn2 := func(_ any) { flag += 1 }
-	fn3 := func(_ any) { flag += 1 }
-	bus.SubscribeOnce(topic, fn1)
-	bus.Subscribe(topic, fn2)
-	bus.Subscribe(topic, fn3)
+
+	fn := func(_ any) { flag += 1 }
+
+	refFirst := bus.SubscribeOnce(topic, fn)
+	refSecond := bus.Subscribe(topic, fn)
+	refThird := bus.Subscribe(topic, fn)
+
+	if refFirst == refSecond || refFirst == refThird || refSecond == refThird {
+		t.Fail()
+	}
+
 	bus.Publish(topic, nil)
 
 	if flag != 3 {
@@ -46,12 +50,12 @@ func TestSimpleOnceAndManySubscribe(t *testing.T) {
 func TestSimpleUnsubscribe(t *testing.T) {
 	bus := NewSimpleBus[any]()
 	fn := func(_ any) {}
-	bus.Subscribe("topic", fn)
+	ref := bus.Subscribe("topic", fn)
 	if !bus.HasCallback("topic") {
 		t.Logf("Expected to have callback for topic but it is not present")
 		t.Fail()
 	}
-	bus.Unsubscribe("topic", fn)
+	bus.Unsubscribe("topic", ref)
 	if bus.HasCallback("topic") {
 		t.Logf("Expected to have no callback for topic after unsubscribe but it is present")
 		t.Fail()
@@ -70,9 +74,9 @@ func TestSimpleUnsubscribeMethod(t *testing.T) {
 	bus := NewSimpleBus[any]()
 	h := &accumulator{val: 0}
 
-	bus.Subscribe("topic", h.Handle)
+	ref := bus.Subscribe("topic", h.Handle)
 	bus.Publish("topic", nil)
-	bus.Unsubscribe("topic", h.Handle)
+	bus.Unsubscribe("topic", ref)
 	bus.Publish("topic", nil)
 
 	if h.val != 1 {

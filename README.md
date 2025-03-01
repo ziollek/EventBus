@@ -26,6 +26,9 @@ import (
 ```
 
 #### Example
+
+General purpose event bus (unlimited number of parameters of any type):
+
 ```go
 func calculator(a int, b int) {
 	fmt.Printf("%d\n", a + b)
@@ -36,6 +39,27 @@ func main() {
 	bus.Subscribe("main:calculator", calculator);
 	bus.Publish("main:calculator", 20, 40);
 	bus.Unsubscribe("main:calculator", calculator);
+}
+```
+
+You can alternatively use ~50% faster implementation if your listener accepts only one argument of a particular type.
+Simple event bus (only one parameter of a chosen type):
+
+```go
+type sumComponents struct {
+    a int
+    b int
+}
+
+func calculator(args sumComponents) {
+	fmt.Printf("%d\n", args.a + args.b)
+}
+
+func main() {
+    bus := EventBus.NewSimpleBus[sumComponents]()
+    ref := bus.Subscribe("main:calculator", calculator)
+    bus.Publish("main:calculator", sumComponents{20, 40})
+    bus.Unsubscribe("main:calculator", ref)
 }
 ```
 
@@ -56,10 +80,10 @@ New returns new EventBus with empty handlers.
 bus := EventBus.New();
 ```
 
-You can alternatively use ~50% faster implementation if your listener accepts only one argument of a particular type.
+#### NewSimpleBus[T]()
 The below example creates a new EventBus with handlers accepting only string arguments:
 ```go
-bus := EventBus.NewSimpleBus[string]();
+bus := EventBus.NewSimpleBus[string]()
 ````
 
 #### Subscribe(topic string, fn interface{}) error
@@ -68,6 +92,18 @@ Subscribe to a topic. Returns error if `fn` is not a function.
 func Handler() { ... }
 ...
 bus.Subscribe("topic:handler", Handler)
+```
+
+#### Subscribe(topic string, fn func(T)) SubscriptionRef
+
+Simplified version of bus returns `SubscriptionRef` as a result of all subscription methods. It can be used to unsubscribe from the topic.
+```go
+func Handler(param string) { ... }
+...
+bus := EventBus.NewSimpleBus[string]()
+ref := bus.Subscribe("topic:handler", Handler)
+...
+bus.Unsubscribe(ref)
 ```
 
 #### SubscribeOnce(topic string, fn interface{}) error
